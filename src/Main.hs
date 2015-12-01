@@ -26,11 +26,14 @@ main = do
     url <- view gqursQueueURL <$> send (getQueueURL queueName)
     src <- view ldlsqrsQueueURLs <$>  send (listDeadLetterSourceQueues $ url)
     mss <- send (receiveMessage url & rmWaitTimeSeconds ?~ 20)
+
+    -- this consumes ones into `m [Message]`
+    -- how to produce a stream of messages within that `m`?
     forM_ (mss ^. rmrsMessages) $ \m -> do
             say "---------------------------------------------"
             say $ "Received Message: " <> Text.pack (show m)
-    --forM_ src say
-    --say uuu
+
+
     say "End."
 
 
