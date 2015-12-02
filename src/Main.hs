@@ -17,6 +17,9 @@ import           System.IO
 
 queueName = "nkbt-batched-attacks-es-dead-letter"
 
+type MsgBody    = Text
+type MsgReceipt = Text
+
 main :: IO ()
 main = do
   log <- newLogger Debug stdout
@@ -34,7 +37,7 @@ main = do
 
     say "End."
 
-payloads :: [Message] -> [(Text, Text)]
+payloads :: [Message] -> [(MsgBody, MsgReceipt)]
 payloads msgs =
  let pair msg = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
  in concat $ (maybeToList . pair) <$> msgs
