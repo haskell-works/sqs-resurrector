@@ -2,6 +2,8 @@
 
 module Main where
 
+import           Data.List
+import           Data.Maybe
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -13,7 +15,7 @@ import qualified Data.Text.IO            as Text
 import           Network.AWS.SQS         as SQS
 import           System.IO
 
-queueName = "allen-batched-attacks-dead-letter"
+queueName = "nkbt-batched-attacks-es-dead-letter"
 
 main :: IO ()
 main = do
@@ -23,17 +25,21 @@ main = do
   let say = liftIO . Text.putStrLn
 
   runResourceT . runAWST env $ do
-    url <- view gqursQueueURL <$> send (getQueueURL queueName)
-    src <- view ldlsqrsQueueURLs <$>  send (listDeadLetterSourceQueues $ url)
-    mss <- send (receiveMessage url & rmWaitTimeSeconds ?~ 20)
-
-    -- this consumes ones into `m [Message]`
-    -- how to produce a stream of messages within that `m`?
-    forM_ (mss ^. rmrsMessages) $ \m -> do
-            say "---------------------------------------------"
-            say $ "Received Message: " <> Text.pack (show m)
-
+    ddltrq <- view gqursQueueURL <$> send (getQueueURL queueName)
+    queues <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues ddltrq)
+    mss <- consume ddltrq
+    forM_ mss (deliver queues)
 
     say "End."
 
+deliver dsts msg =
+  let bs = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
+      ps = [(d, b, r) | d <- dsts, (b, r) <- maybeToList bs]
+  in forM_ ps $ \(d, b, r) -> do
+       --void $ send (sendMessage d b)
+       (liftIO . Text.putStrLn) $ "---------------------"
+       (liftIO . Text.putStrLn) $ r
 
+consume url = do
+  batch <- send (receiveMessage url & rmWaitTimeSeconds ?~ 20)
+  return $ batch ^. rmrsMessages
