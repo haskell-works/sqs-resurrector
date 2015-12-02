@@ -27,15 +27,21 @@ main = do
   runResourceT . runAWST env $ do
     ddltrq <- view gqursQueueURL <$> send (getQueueURL queueName)
     queues <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues ddltrq)
-    mss <- consume ddltrq
-    forM_ mss (deliver queues)
+
+    -- and do it again, and again, and again...
+    msgs   <- consume ddltrq
+    deliver queues msgs
 
     say "End."
 
-deliver dsts msg =
-  let bs = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
-      ps = [(d, b, r) | d <- dsts, (b, r) <- maybeToList bs]
-  in forM_ ps $ \(d, b, r) -> do
+payloads :: [Message] -> [(Text, Text)]
+payloads msgs =
+ let pair msg = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
+ in concat $ (maybeToList . pair) <$> msgs
+
+deliver queues msgs =
+  let letters = [(q, b, r) | q <- queues, (b, r) <- payloads msgs]
+  in forM_ letters $ \(q, b, r) -> do
        --void $ send (sendMessage d b)
        (liftIO . Text.putStrLn) $ "---------------------"
        (liftIO . Text.putStrLn) $ r
