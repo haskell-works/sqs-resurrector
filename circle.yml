@@ -16,3 +16,7 @@ dependencies:
 test:
   override:
     - stack test
+
+notify:
+  webhooks:
+    - url: https://webhooks.gitter.im/e/65f3582ebbb8f8434c3e
