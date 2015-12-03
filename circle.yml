@@ -1,6 +1,8 @@
 machine:
   ghc:
     version: 7.10.2
+  services:
+    - docker
 
 dependencies:
   cache_directories:
@@ -12,6 +14,8 @@ dependencies:
   override:
     - stack setup
     - stack build
+    - docker info
+    - docker build -t quay.io/haskellworks/sqs-resurrector .
 
 test:
   override:
