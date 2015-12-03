@@ -6,6 +6,7 @@ import           Data.List
 import           Data.Maybe
 import           Control.Lens
 import           Control.Monad
+import           Control.Monad.Loops
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.AWS
 import           Data.Monoid
@@ -28,14 +29,21 @@ main = do
   let say = liftIO . Text.putStrLn
 
   runResourceT . runAWST env $ do
-    ddltrq <- view gqursQueueURL <$> send (getQueueURL queueName)
-    queues <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues ddltrq)
+   ddltrq <- view gqursQueueURL <$> send (getQueueURL queueName)
+   queues <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues ddltrq)
 
-    -- and do it again, and again, and again...
-    msgs   <- consume ddltrq
-    deliver queues msgs
+   -- and do it again, and again, and again...
+   msgs   <- consume ddltrq
+   deliver queues msgs
 
-    say "End."
+   iterateWhile null (copyMessages ddltrq queues)
+
+   say "End."
+
+copyMessages from to = do
+  msgs <- consume from 
+  deliver to msgs
+  return msgs
 
 payloads :: [Message] -> [(MsgBody, MsgReceipt)]
 payloads msgs =
