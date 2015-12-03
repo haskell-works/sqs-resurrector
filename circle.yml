@@ -15,11 +15,16 @@ dependencies:
     - stack setup
     - stack build
     - docker info
-    - docker build -t quay.io/haskellworks/sqs-resurrector .
+    - docker build -t quay.io/haskell_works/sqs-resurrector .
 
 test:
   override:
     - stack test
+
+deployment:
+  quai:
+    docker login -e="." -u="$QUAI_USERNAME" -p="$QUAI_PASSWORD" quay.io
+    docker push quay.io/haskell_works/sqs-resurrector
 
 notify:
   webhooks:
