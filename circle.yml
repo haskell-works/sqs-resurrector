@@ -23,6 +23,8 @@ test:
 
 deployment:
   quai:
+    branch: [develop, master]
+    commands:
     - docker login -e="." -u="$QUAI_USERNAME" -p="$QUAI_PASSWORD" quay.io
     - docker push quay.io/haskell_works/sqs-resurrector
 
