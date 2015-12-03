@@ -16,7 +16,7 @@ import qualified Data.Text.IO            as Text
 import           Network.AWS.SQS         as SQS
 import           System.IO
 
-queueName = "nkbt-batched-attacks-es-dead-letter"
+fromQueueName = "nkbt-batched-attacks-es-dead-letter"
 
 type MsgBody    = Text
 type MsgReceipt = Text
@@ -29,19 +29,15 @@ main = do
   let say = liftIO . Text.putStrLn
 
   runResourceT . runAWST env $ do
-   ddltrq <- view gqursQueueURL <$> send (getQueueURL queueName)
-   queues <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues ddltrq)
+   from <- view gqursQueueURL    <$> send (getQueueURL fromQueueName)
+   to   <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
 
-   -- and do it again, and again, and again...
-   msgs   <- consume ddltrq
-   deliver queues msgs
-
-   iterateWhile null (copyMessages ddltrq queues)
+   iterateWhile (not . null) (copyMessages from to)
 
    say "End."
 
 copyMessages from to = do
-  msgs <- consume from 
+  msgs <- consume from
   deliver to msgs
   return msgs
 
@@ -58,5 +54,5 @@ deliver queues msgs =
        (liftIO . Text.putStrLn) $ r
 
 consume url = do
-  batch <- send (receiveMessage url & rmWaitTimeSeconds ?~ 20)
+  batch <- send (receiveMessage url & rmWaitTimeSeconds ?~ 5)
   return $ batch ^. rmrsMessages

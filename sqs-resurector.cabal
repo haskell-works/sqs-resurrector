@@ -19,6 +19,7 @@ executable sqs-resurector
   build-depends:       base >= 4.7 && < 5
                      , text
                      , transformers
+                     , monad-loops
                      , lens
                      , amazonka >= 1.3.5
                      , amazonka-core
