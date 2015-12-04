@@ -20,6 +20,8 @@ dependencies:
 test:
   override:
     - stack test
+  post:
+    - docker run --rm -it quay.io/haskell_works/sqs-resurrector sqs-resurector | egrep -q "MissingFileError"
 
 deployment:
   quai:
