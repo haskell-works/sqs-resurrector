@@ -29,12 +29,12 @@ main = do
   let say = liftIO . Text.putStrLn
 
   runResourceT . runAWST env $ do
-   from <- view gqursQueueURL    <$> send (getQueueURL fromQueueName)
-   tos  <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
+    from <- view gqursQueueURL    <$> send (getQueueURL fromQueueName)
+    tos  <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
 
-   iterateWhile (not . null) (moveMessages from tos)
+    iterateWhile (not . null) (moveMessages from tos)
 
-   say "End."
+    say "End."
 
 moveMessages from tos = do
   msgs <- consume from
@@ -43,8 +43,8 @@ moveMessages from tos = do
 
 payloads :: [Message] -> [(MsgBody, MsgReceipt)]
 payloads msgs =
- let pair msg = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
- in concat $ (maybeToList . pair) <$> msgs
+  let pair msg = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
+  in concat $ (maybeToList . pair) <$> msgs
 
 deliverAndAck from tos msgs =
   let letters = [(to, body, rcpt) | to <- tos, (body, rcpt) <- payloads msgs]
