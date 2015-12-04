@@ -21,7 +21,7 @@ test:
   override:
     - stack test
   post:
-    - NO_AWS=$(docker run quay.io/haskell_works/sqs-resurrector)
+    - NO_AWS=$(docker run quay.io/haskell_works/sqs-resurrector 2>&1 || :)
     - echo $NO_AWS
     - echo $NO_AWS | egrep -q "MissingFileError"
 
