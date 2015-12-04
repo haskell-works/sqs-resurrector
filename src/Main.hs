@@ -30,15 +30,15 @@ main = do
 
   runResourceT . runAWST env $ do
    from <- view gqursQueueURL    <$> send (getQueueURL fromQueueName)
-   to   <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
+   tos  <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
 
-   iterateWhile (not . null) (copyMessages from to)
+   iterateWhile (not . null) (moveMessages from tos)
 
    say "End."
 
-copyMessages from to = do
+moveMessages from tos = do
   msgs <- consume from
-  deliver to msgs
+  deliverAndAck from tos msgs
   return msgs
 
 payloads :: [Message] -> [(MsgBody, MsgReceipt)]
@@ -46,12 +46,11 @@ payloads msgs =
  let pair msg = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
  in concat $ (maybeToList . pair) <$> msgs
 
-deliver queues msgs =
-  let letters = [(q, b, r) | q <- queues, (b, r) <- payloads msgs]
-  in forM_ letters $ \(q, b, r) -> do
-       --void $ send (sendMessage d b)
-       (liftIO . Text.putStrLn) $ "---------------------"
-       (liftIO . Text.putStrLn) $ r
+deliverAndAck from tos msgs =
+  let letters = [(to, body, rcpt) | to <- tos, (body, rcpt) <- payloads msgs]
+  in forM_ letters $ \(to, body, rcpt) -> do
+       void $ send (sendMessage to body)
+       void $ send (deleteMessage from rcpt)
 
 consume url = do
   batch <- send (receiveMessage url & rmWaitTimeSeconds ?~ 5)
