@@ -15,21 +15,44 @@ import qualified Data.Text               as Text
 import qualified Data.Text.IO            as Text
 import           Network.AWS.SQS         as SQS
 import           System.IO
-
-fromQueueName = "nkbt-batched-attacks-es-dead-letter"
+import           Options.Applicative
 
 type MsgBody    = Text
 type MsgReceipt = Text
 
+data Options   = Options { region :: Region, deadLetterQueue :: Text } deriving Show
+defaultOptions = Options { region = Oregon,  deadLetterQueue = "" }
+
+textOption = option $ Text.pack <$> str
+
+options :: Parser Options
+options = Options
+  <$> (option auto (  long "region"
+                   <> short 'r'
+                   <> metavar "REGION"
+                   <> help "AWS Region Name (default Oregon)") <|> pure Oregon)
+  <*> (textOption (  long "queue"
+                  <> short 'q'
+                  <> metavar "QUEUE_NAME"
+                  <> help "Dead Letter Queue"))
+
+parseOptions =
+  info (helper <*> options)
+    (  fullDesc
+    <> progDesc "Resurrects messages from a given dead letter queue"
+    <> header "SQS Deal Letter Queue messages resurrector"
+    )
+
 main :: IO ()
 main = do
+  opt <- execParser parseOptions
   log <- newLogger Debug stdout
-  env <- newEnv Oregon Discover <&> envLogger .~ log
+  env <- newEnv (region opt) Discover <&> envLogger .~ log
 
   let say = liftIO . Text.putStrLn
 
   runResourceT . runAWST env $ do
-    from <- view gqursQueueURL    <$> send (getQueueURL fromQueueName)
+    from <- view gqursQueueURL    <$> send (getQueueURL $ deadLetterQueue opt)
     tos  <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
 
     iterateWhile (not . null) (moveMessages from tos)
