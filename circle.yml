@@ -22,7 +22,7 @@ test:
   override:
     - stack test
   post:
-    - docker run quay.io/haskell_works/sqs-resurrector 2>&1 | egrep -q "MissingFileError"
+    - docker run quay.io/haskell_works/sqs-resurrector 2>&1 | egrep -q "^Usage:"
 
 deployment:
   quai:
