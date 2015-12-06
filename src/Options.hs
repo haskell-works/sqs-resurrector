@@ -18,6 +18,7 @@ data Options = Options { region :: Region
                        , logLevel :: LogLevel
                        } deriving (Show, Eq)
 
+parseOptions :: IO Options
 parseOptions = execParser optionsParser
 
 fromTextOption :: (FromText a) => Mod OptionFields a -> Parser a
@@ -51,6 +52,7 @@ options = Options
          <> help "Log level"
          <> hidden))
 
+optionsParser :: ParserInfo Options
 optionsParser = info (helper <*> options)
   (  fullDesc
   <> progDesc "Resurrects messages from a given dead letter queue"
