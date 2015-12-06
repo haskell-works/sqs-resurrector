@@ -1,6 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-module Main where
+module Resurrector (
+   QueueName,
+   runResurrector
+)
+where
 
 import           Data.Maybe
 import           Control.Lens
@@ -13,23 +15,17 @@ import qualified Data.Text               as Text
 import qualified Data.Text.IO            as Text
 import           Network.AWS.SQS         as SQS
 import           System.IO
-import           Options
 
-main :: IO ()
-main = do
-  opt <- parseOptions
-  log <- newLogger (logLevel opt) stdout
-  env <- newEnv (region opt) Discover <&> envLogger .~ log
+type QueueName = Text
 
-  let say = liftIO . Text.putStrLn
-
+runResurrector :: (HasEnv e) => e -> QueueName -> IO ()
+runResurrector env deadLetterQueue =
   runResourceT . runAWST env $ do
-    from <- view gqursQueueURL    <$> send (getQueueURL $ deadLetterQueue opt)
+    from <- view gqursQueueURL    <$> send (getQueueURL $ deadLetterQueue)
     tos  <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
 
     iterateWhile (not . null) (moveMessages from tos)
-
-    say "End."
+    return ()
 
 moveMessages from tos = do
   msgs <- consume from

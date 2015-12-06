@@ -1,5 +1,6 @@
 module Options (
   Options(..),
+  options,
   parseOptions
 )
 where
@@ -15,7 +16,7 @@ import           Options.Applicative
 data Options = Options { region :: Region
                        , deadLetterQueue :: Text
                        , logLevel :: LogLevel
-                       } deriving Show
+                       } deriving (Show, Eq)
 
 parseOptions = execParser optionsParser
 
