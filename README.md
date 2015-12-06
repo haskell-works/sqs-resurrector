@@ -11,7 +11,7 @@ Usage: sqs-resurrector [-r|--region REGION] (-q|--queue QUEUE_NAME)
 
 Available options:  
   -h,--help                Show this help text  
-  -r,--region REGION       AWS Region Name (default Oregon)  
+  -r,--region REGION       AWS Region Name (default: Oregon)  
   -q,--queue QUEUE_NAME    Dead Letter Queue
   
 ```

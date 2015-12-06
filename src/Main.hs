@@ -30,7 +30,9 @@ options = Options
   <$> (option auto (  long "region"
                    <> short 'r'
                    <> metavar "REGION"
-                   <> help "AWS Region Name (default Oregon)") <|> pure Oregon)
+                   <> showDefault
+                   <> value Oregon
+                   <> help "AWS Region Name"))
   <*> (textOption (  long "queue"
                   <> short 'q'
                   <> metavar "QUEUE_NAME"
