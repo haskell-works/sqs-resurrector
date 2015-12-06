@@ -4,13 +4,13 @@ module Resurrector (
 )
 where
 
-import           Data.Maybe
-import           Control.Lens
-import           Control.Monad
-import           Control.Monad.Loops
-import           Control.Monad.Trans.AWS
-import           Data.Text               (Text)
-import           Network.AWS.SQS
+import Data.Maybe
+import Control.Lens
+import Control.Monad
+import Control.Monad.Loops
+import Control.Monad.Trans.AWS
+import Data.Text (Text)
+import Network.AWS.SQS
 
 type QueueName = Text
 

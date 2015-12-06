@@ -18,17 +18,6 @@ data Options = Options { region :: Region
                        , logLevel :: LogLevel
                        } deriving (Show, Eq)
 
-parseOptions :: IO Options
-parseOptions = execParser optionsParser
-
-fromTextOption :: (FromText a) => Mod OptionFields a -> Parser a
-fromTextOption = option $ eitherReader (fromText . Text.pack)
-
-readOrFromTextOption :: (Read a, FromText a) => Mod OptionFields a -> Parser a
-readOrFromTextOption =
-  let fromStr s = readEither s <|> fromText (Text.pack s)
-  in option $ eitherReader fromStr
-
 options :: Parser Options
 options = Options
   <$> (readOrFromTextOption
@@ -59,3 +48,15 @@ optionsParser = info (helper <*> options)
   <> header "SQS Deal Letter Queue messages resurrector"
   )
 
+parseOptions :: IO Options
+parseOptions = execParser optionsParser
+
+--------------------------- HELPERS ------------------------------
+
+fromTextOption :: (FromText a) => Mod OptionFields a -> Parser a
+fromTextOption = option $ eitherReader (fromText . Text.pack)
+
+readOrFromTextOption :: (Read a, FromText a) => Mod OptionFields a -> Parser a
+readOrFromTextOption =
+  let fromStr s = readEither s <|> fromText (Text.pack s)
+  in option $ eitherReader fromStr
