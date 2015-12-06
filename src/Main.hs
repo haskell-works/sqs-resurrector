@@ -2,8 +2,10 @@
 
 module Main where
 
+import           Text.Read
 import           Data.List
 import           Data.Maybe
+import           Data.Char (toLower)
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.Loops
@@ -14,41 +16,59 @@ import           Data.Text               (Text)
 import qualified Data.Text               as Text
 import qualified Data.Text.IO            as Text
 import           Network.AWS.SQS         as SQS
+import           Network.AWS.Data.Text (fromText, FromText(..))
 import           System.IO
 import           Options.Applicative
 
 type MsgBody    = Text
 type MsgReceipt = Text
 
-data Options   = Options { region :: Region, deadLetterQueue :: Text } deriving Show
-defaultOptions = Options { region = Oregon,  deadLetterQueue = "" }
+data Options   = Options { region :: Region
+                         , deadLetterQueue :: Text
+                         , logLevel :: LogLevel
+                         } deriving Show
 
-textOption = option $ Text.pack <$> str
+fromTextOption :: (FromText a) => Mod OptionFields a -> Parser a
+fromTextOption = option $ eitherReader (fromText . Text.pack)
+
+readOrFromTextOption :: (Read a, FromText a) => Mod OptionFields a -> Parser a
+readOrFromTextOption =
+  let fromStr s = readEither s <|> fromText (Text.pack s)
+  in option $ eitherReader fromStr
 
 options :: Parser Options
 options = Options
-  <$> (option auto (  long "region"
-                   <> short 'r'
-                   <> metavar "REGION"
-                   <> showDefault
-                   <> value Oregon
-                   <> help "AWS Region Name"))
-  <*> (textOption (  long "queue"
-                  <> short 'q'
-                  <> metavar "QUEUE_NAME"
-                  <> help "Dead Letter Queue"))
+  <$> (readOrFromTextOption
+         (  long "region"
+         <> short 'r'
+         <> showDefault <> value Oregon
+         <> metavar "REGION"
+         <> help "AWS Region Name"))
 
-parseOptions =
-  info (helper <*> options)
-    (  fullDesc
-    <> progDesc "Resurrects messages from a given dead letter queue"
-    <> header "SQS Deal Letter Queue messages resurrector"
-    )
+  <*> (fromTextOption
+         (  long "queue"
+         <> short 'q'
+         <> metavar "QUEUE_NAME"
+         <> help "Dead Letter Queue"))
+
+  <*> (fromTextOption
+         (  long "log"
+         <> short 'l'
+         <> metavar "LOG_LEVEL"
+         <> showDefault <> value Error
+         <> help "Log level"
+         <> hidden))
+
+optionsParser = info (helper <*> options)
+  (  fullDesc
+  <> progDesc "Resurrects messages from a given dead letter queue"
+  <> header "SQS Deal Letter Queue messages resurrector"
+  )
 
 main :: IO ()
 main = do
-  opt <- execParser parseOptions
-  log <- newLogger Debug stdout
+  opt <- execParser optionsParser
+  log <- newLogger (logLevel opt) stdout
   env <- newEnv (region opt) Discover <&> envLogger .~ log
 
   let say = liftIO . Text.putStrLn
