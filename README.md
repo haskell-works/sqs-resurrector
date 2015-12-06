@@ -13,5 +13,6 @@ Available options:
   -h,--help                Show this help text  
   -r,--region REGION       AWS Region Name (default: Oregon)  
   -q,--queue QUEUE_NAME    Dead Letter Queue
+  -l,--log LOG_LEVEL       Log level (default: Error)
   
 ```
