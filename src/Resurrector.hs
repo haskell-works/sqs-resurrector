@@ -17,7 +17,7 @@ type QueueName = Text
 runResurrector :: (HasEnv e) => e -> QueueName -> IO ()
 runResurrector env deadLetterQueue =
   runResourceT . runAWST env $ do
-    from <- view gqursQueueURL    <$> send (getQueueURL $ deadLetterQueue)
+    from <- view gqursQueueURL    <$> send (getQueueURL deadLetterQueue)
     tos  <- view ldlsqrsQueueURLs <$> send (listDeadLetterSourceQueues from)
 
     iterateWhile (not . null) (moveMessages from tos)
@@ -30,7 +30,7 @@ moveMessages from tos = do
   where
 
   payloads msgs =
-    let pair msg = (,) <$> (view mBody msg) <*> (view mReceiptHandle msg)
+    let pair msg = (,) <$> view mBody msg <*> view mReceiptHandle msg
     in concat $ (maybeToList . pair) <$> msgs
 
   deliverAndAck from tos msgs =
@@ -40,5 +40,5 @@ moveMessages from tos = do
          void $ send (deleteMessage from rcpt)
 
   consume url = do
-    batch <- send (receiveMessage url & rmWaitTimeSeconds ?~ 5)
+    batch <- send (receiveMessage url & rmWaitTimeSeconds ?~ 5 & rmMaxNumberOfMessages ?~ 10)
     return $ batch ^. rmrsMessages
