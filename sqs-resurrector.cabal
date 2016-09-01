@@ -1,5 +1,5 @@
 name:                sqs-resurrector
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            SQS Deal Letter Queue messages resurrector
 description:         Please see README.md
 homepage:            http://github.com/haskell-works/sqs-resurrector#readme
